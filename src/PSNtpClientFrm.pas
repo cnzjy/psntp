@@ -3,15 +3,16 @@ unit PSNtpClientFrm;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.DateUtils,
+  System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, IdBaseComponent, IdComponent, IdUDPBase,
   IdUDPClient, IdSNTP, Vcl.StdCtrls, Vcl.Mask, Vcl.ExtCtrls, Vcl.ComCtrls,
   System.IniFiles, System.Win.Registry, IdAntiFreezeBase, IdAntiFreeze, CnTrayIcon,
-  Vcl.Menus, CnCommon;
+  Vcl.Menus, CnCommon, Vcl.Samples.Spin, CnInetUtils;
 
 const
   SAppCaption = 'PlumeSoft 网络对时小工具';
-  csAppVer = 'v1.0';
+  csAppVer = 'v1.1';
 
 type
   TPSNtpClientForm = class(TForm)
@@ -31,6 +32,8 @@ type
     pmTrayIcon: TPopupMenu;
     mniShow: TMenuItem;
     mniX1: TMenuItem;
+    sePort: TSpinEdit;
+    lblTime: TLabel;
     procedure lbledtServerChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -57,6 +60,7 @@ type
     procedure SaveCfg;
     procedure GetCfgFromControls;
     function DoSync: Boolean;
+    function DoSyncHttp: Boolean;
     procedure UpdateLabel;
     procedure OnTrayIconClick(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -74,6 +78,19 @@ var
 implementation
 
 {$R *.dfm}
+
+function ConvertUTCToLocalTime(UTCDateTime: TDateTime): TDateTime;
+begin
+  Result := TTimeZone.Local.ToLocalTime(UTCDateTime);
+end;
+
+function SetLocalTimeFromUTC(utcdt: TDateTime): Boolean;
+var
+  st: TSystemTime;
+begin
+  DateTimeToSystemTime(ConvertUTCToLocalTime(utcdt), st);
+  Result := SetLocalTime(st);
+end;
 
 procedure TPSNtpClientForm.btnCloseClick(Sender: TObject);
 begin
@@ -113,7 +130,14 @@ begin
   FSyncing := True;
   try
     try
-      FLastSucc := idsntp.SyncTime;
+      if Pos('http://', lbledtServer.Text) = 1 then
+        FLastSucc := DoSyncHttp
+      else
+      begin
+        idsntp.Host := lbledtServer.Text;
+        idsntp.Port := sePort.Value;
+        FLastSucc := idsntp.SyncTime;
+      end;
     except
       FLastSucc := False;
     end;
@@ -126,6 +150,37 @@ begin
   finally
     FSyncing := False;
   end;
+end;
+
+function TPSNtpClientForm.DoSyncHttp: Boolean;
+var
+  TimeStr: string;
+  DT: TDateTime;
+  Delta: TDateTime;
+begin
+  TimeStr := string(CnInet_GetString(lbledtServer.Text));
+  // 2023-10-18 09:29:20.443
+  if Length(TimeStr) = 23 then
+  begin
+    if sePort.Value >= 0 then
+      Delta := EncodeTime(0, 0, 0, sePort.Value)
+    else
+      Delta := -EncodeTime(0, 0, 0, -sePort.Value);
+
+    DT := EncodeDate(
+      StrToInt(Copy(TimeStr, 1, 4)),
+      StrToInt(Copy(TimeStr, 6, 2)),
+      StrToInt(Copy(TimeStr, 9, 2))) +
+      EncodeTime(
+      StrToInt(Copy(TimeStr, 12, 2)),
+      StrToInt(Copy(TimeStr, 15, 2)),
+      StrToInt(Copy(TimeStr, 18, 2)),
+      StrToInt(Copy(TimeStr, 21, 3))) +
+      Delta; // 毫秒补偿
+    Result := SetLocalTimeFromUTC(DT);
+  end
+  else
+    Result := False;
 end;
 
 procedure TPSNtpClientForm.dtpTimeChange(Sender: TObject);
@@ -191,7 +246,6 @@ begin
     Exit;
   FUpdating := True;
   try
-    idsntp.Host := lbledtServer.Text;
     SaveCfg;
   finally
     FUpdating := False;
@@ -214,7 +268,7 @@ begin
   FUpdating := True;
   try
     lbledtServer.Text := FIni.ReadString('', 'Host', 'time.pool.aliyun.com');
-    idsntp.Host := lbledtServer.Text;
+    sePort.Value := FIni.ReadInteger('', 'Port', 123);
     chkAutoSync.Checked := FIni.ReadBool('', 'AutoSync', True);
     dtpTime.Time := FIni.ReadTime('', 'SyncTime', EncodeTime(8, 0, 0, 0));
     FLastDate := FIni.ReadDateTime('', 'LastDate', 0);
@@ -228,6 +282,7 @@ end;
 procedure TPSNtpClientForm.SaveCfg;
 begin
   FIni.WriteString('', 'Host', lbledtServer.Text);
+  FIni.WriteInteger('', 'Port', sePort.Value);
   FIni.WriteBool('', 'AutoSync', chkAutoSync.Checked);
   FIni.WriteTime('', 'SyncTime', dtpTime.Time);
   FIni.WriteDateTime('', 'LastDate', FLastDate);
@@ -254,6 +309,7 @@ begin
   begin
     DoSync;
   end;
+  lblTime.Caption := '当前时间: ' + DateTimeToStr(Now);
 end;
 
 procedure TPSNtpClientForm.UpdateLabel;

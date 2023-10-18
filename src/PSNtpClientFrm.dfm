@@ -3,7 +3,7 @@ object PSNtpClientForm: TPSNtpClientForm
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'PlumeSoft '#32593#32476#23545#26102#23567#24037#20855
-  ClientHeight = 290
+  ClientHeight = 313
   ClientWidth = 378
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,19 +17,21 @@ object PSNtpClientForm: TPSNtpClientForm
   OnDestroy = FormDestroy
   DesignSize = (
     378
-    290)
+    313)
   TextHeight = 15
   object grp1: TGroupBox
     Left = 8
     Top = 8
     Width = 362
-    Height = 241
+    Height = 264
     Anchors = [akLeft, akTop, akRight, akBottom]
     Caption = #23545#26102#35774#32622
     TabOrder = 0
+    ExplicitWidth = 358
+    ExplicitHeight = 240
     DesignSize = (
       362
-      241)
+      264)
     object lblLast: TLabel
       Left = 16
       Top = 148
@@ -44,10 +46,17 @@ object PSNtpClientForm: TPSNtpClientForm
       Height = 15
       Caption = #25104#21151#23545#26102': '#26080
     end
+    object lblTime: TLabel
+      Left = 16
+      Top = 190
+      Width = 71
+      Height = 15
+      Caption = #24403#21069#26102#38388': '#26080
+    end
     object lbledtServer: TLabeledEdit
       Left = 16
       Top = 40
-      Width = 332
+      Width = 265
       Height = 23
       Anchors = [akLeft, akTop, akRight]
       EditLabel.Width = 68
@@ -56,7 +65,7 @@ object PSNtpClientForm: TPSNtpClientForm
       TabOrder = 0
       Text = 'time.pool.aliyun.com'
       OnChange = lbledtServerChange
-      ExplicitWidth = 270
+      ExplicitWidth = 261
     end
     object chkAutoSync: TCheckBox
       Left = 16
@@ -67,7 +76,7 @@ object PSNtpClientForm: TPSNtpClientForm
       Caption = #27599#22825#33258#21160#23545#26102#12290
       TabOrder = 1
       OnClick = chkAutoSyncClick
-      ExplicitWidth = 270
+      ExplicitWidth = 328
     end
     object dtpTime: TDateTimePicker
       Left = 40
@@ -80,11 +89,11 @@ object PSNtpClientForm: TPSNtpClientForm
       Kind = dtkTime
       TabOrder = 2
       OnChange = dtpTimeChange
-      ExplicitWidth = 246
+      ExplicitWidth = 304
     end
     object btnSync: TButton
       Left = 16
-      Top = 190
+      Top = 211
       Width = 105
       Height = 25
       Caption = #31435#21363#23545#26102'(&S)'
@@ -100,26 +109,41 @@ object PSNtpClientForm: TPSNtpClientForm
       TabOrder = 3
       OnClick = chkAutoRunClick
     end
+    object sePort: TSpinEdit
+      Left = 287
+      Top = 39
+      Width = 61
+      Height = 24
+      MaxValue = 0
+      MinValue = 0
+      TabOrder = 5
+      Value = 123
+      OnChange = lbledtServerChange
+    end
   end
   object btnMin: TButton
     Left = 295
-    Top = 255
+    Top = 278
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = #26368#23567#21270'(&M)'
     TabOrder = 2
     OnClick = btnMinClick
+    ExplicitLeft = 291
+    ExplicitTop = 254
   end
   object btnClose: TButton
     Left = 214
-    Top = 255
+    Top = 278
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = #36864#20986'(&X)'
     TabOrder = 1
     OnClick = btnCloseClick
+    ExplicitLeft = 210
+    ExplicitTop = 254
   end
   object idsntp: TIdSNTP
     Port = 123
@@ -127,6 +151,7 @@ object PSNtpClientForm: TPSNtpClientForm
     Left = 152
   end
   object tmr1: TTimer
+    Interval = 200
     OnTimer = tmr1Timer
     Left = 192
   end
